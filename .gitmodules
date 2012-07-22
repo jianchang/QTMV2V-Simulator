@@ -1,0 +1,3 @@
+[submodule "GrooveNet"]
+	path = GrooveNet
+	url = https://github.com/mlab-penn/GrooveNet.git
