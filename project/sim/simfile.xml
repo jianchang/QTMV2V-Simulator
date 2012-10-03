@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<Simulation Project="QTMV2V"> 
+  <VehicleModel VehicleNum="1">
+    <DetectRange>200.0</DetectRange>
+    <VehicleStartTime>0</VehicleStartTime>
+    <VehicleDelay>0.2</VehicleDelay>
+    <Log>NO</Log>
+    <TrackSpeed>NO</TrackSpeed>	
+    <RoleModel RoleType="Attacker"> <!--Authority/Attacker/Default-->
+    <!--The parameters below can choose the following distribution: Normal/Poisson/Bernoulli/Binomial/Uniform-->
+      <DetectThresh DistributionType="Normal">
+	  	<NormalMean>3.0</NormalMean> 
+	  	<NormalStdev>2.0</NormalStdev>
+      </DetectThresh>
+      <ForwardThresh DistributionType="Poisson">
+	  	<PoissonMean>5.0</PoissonMean>
+      </ForwardThresh>
+      <LieFreq DistributionType="Bernoulli">
+	  	<BernoulliProb>0.6</BernoulliProb>
+      </LieFreq>
+      <LieThresh DistributionType="Binomial">
+	  	<BinomialProb>0.5</BinomialProb>
+	  	<BinomialUpBound>10</BinomialUpBound>
+      </LieThresh>
+      <TrustLow DistributionType="Uniform">
+	  	<UniformUpBound>6.0</UniformUpBound> 
+	  	<UniformLowBound>1.0</UniformLowBound>
+      </TrustLow>
+      <TrustUp DistributionType="UserDefine">
+	  	<UserDefineValue>0.7</UserDefineValue>
+      </TrustUp>
+    </RoleModel>		
+    <SimpleCommModel> 
+      <GateWay>NO</GateWay>
+      <RbxJitter>YES</RbxJitter>
+      <Rbx>YES</Rbx>
+      <RbxInterval>1</RbxInterval>
+    </SimpleCommModel>
+    <SimpleLinkModel>
+    </SimpleLinkModel>		
+    <SimplePhysModel>
+      <MaxDistance>200.0</MaxDistance>
+      <MultiChannel>NO</MultiChannel>
+    </SimplePhysModel>	
+    <RandomWalkModel>
+      <StartAddress></StartAddress>
+    </RandomWalkModel>	
+    <StreetSpeedModel>
+      <MultiLane>NO</MultiLane>
+    </StreetSpeedModel>
+  </VehicleModel>
+  
+  <RSUModel RSUNum="1">
+    <RSUDelay>0.2</RSUDelay>	
+    <RSUPosition></RSUPosition>
+    <SimpleCommModel> 
+      <GateWay>NO</GateWay>
+      <RbxJitter>YES</RbxJitter>
+      <Rbx>YES</Rbx>
+      <RbxInterval>1</RbxInterval>
+    </SimpleCommModel>
+    <SimpleLinkModel></SimpleLinkModel>		
+    <SimplePhysModel>
+      <MaxDistance>200.0</MaxDistance>
+      <MultiChannel>NO</MultiChannel>
+    </SimplePhysModel>	
+  </RSUModel>
+  
+  <IncidentModel IncidentNum="2">
+    <IncidentDelay>0.2</IncidentDelay>
+    <Description></Description>
+    <Duration>10.0</Duration>
+    <IncidentPosition></IncidentPosition>
+    <Severity></Severity>
+    <IncidentStartTime></IncidentStartTime>
+    <Visibility></Visibility>
+  </IncidentModel>
+  
+  <MapModel> <!--only one map is enough-->
+    <Caption></Caption>
+    <MapDelay></MapDelay>
+    <Follow></Follow>
+    <Height></Height>
+    <Width></Width>
+    <StartPos></StartPos>
+    <Zoom></Zoom>
+  </MapModel>
+  
+  <CarList> <!--Only one car list is enough-->
+    <Caption></Caption>
+    <Height></Height>
+    <Width></Width>
+    <ListDelay></ListDelay>
+  </CarList>
+  
+  <IncidentList> <!--Only one incident list is enough-->
+    <Caption></Caption>
+    <Height></Height>
+    <Width></Width>
+    <ListDelay></ListDelay>
+  </IncidentList>
+  
+</Simulation>

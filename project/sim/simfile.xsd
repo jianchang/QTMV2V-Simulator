@@ -1,0 +1,578 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+<!-- definition of simple elements -->
+<!-- Vehicle Model Parameters -->
+<!--  <xs:element name="VehicleID" type="xs:string" />  -->
+
+<xs:element name="DetectRange" type="xs:float" />
+<xs:element name="VehicleStartTime" type="xs:float" default="0" />
+<xs:element name="VehicleDelay" type="xs:float" default="0.2" />
+<xs:element name="TrackSpeed" default="NO">
+   <xs:simpleType>
+      <xs:restriction base="xs:string">
+	 <xs:pattern value="YES|NO" />
+      </xs:restriction>
+   </xs:simpleType>
+</xs:element>
+<xs:element name="Log" default="NO">
+   <xs:simpleType>
+      <xs:restriction base="xs:string">
+	 	 <xs:pattern value="YES|NO" />
+      </xs:restriction>
+   </xs:simpleType>
+</xs:element>
+
+<!-- SimpleComm Model Parameters -->
+<xs:element name="GateWay" default="NO">
+   <xs:simpleType>
+      <xs:restriction base="xs:string">
+	 <xs:pattern value="YES|NO" />
+      </xs:restriction>
+   </xs:simpleType>
+</xs:element>
+<xs:element name="RbxJitter" default="YES">
+   <xs:simpleType>
+      <xs:restriction base="xs:string">
+	  <xs:pattern value="YES|NO" />
+      </xs:restriction>
+   </xs:simpleType>
+</xs:element>
+<xs:element name="Rbx" default="YES">
+   <xs:simpleType>
+      <xs:restriction base="xs:string">
+	  	 <xs:pattern value="YES|NO" />
+      </xs:restriction>
+   </xs:simpleType>
+</xs:element>
+<xs:element name="RbxInterval" type="xs:int" default="1" />
+
+<!-- SimpleLink Model -->
+<xs:element name="SimpleLinkModel" type="xs:string" /> 
+
+<!-- SimplePhys Model Parameters -->
+<xs:element name="MaxDistance" type="xs:float" default="200.0" />
+<xs:element name="MultiChannel" default="NO">
+   <xs:simpleType>
+      <xs:restriction base="xs:string">
+	 <xs:pattern value="YES|NO" />
+      </xs:restriction>
+   </xs:simpleType>
+</xs:element>
+
+<!-- RandomWalk Model Parameters -->
+<xs:element name="StartAddress" type="xs:string" />
+
+<!-- StreetSpeed Model Parameters -->
+<xs:element name="MultiLane" default="NO">
+   <xs:simpleType>
+      <xs:restriction base="xs:string">
+	 	 <xs:pattern value="YES|NO" />
+      </xs:restriction>
+   </xs:simpleType>
+</xs:element>
+
+<!-- Road Side Unit Parameters -->
+<xs:element name="RSUDelay" type="xs:float" default="0.2" />
+<!--  <xs:element name="RSUID" type="xs:string">  -->
+
+<xs:element name="RSUPosition" type="xs:string" />
+
+<!-- Incident Model Parameters -->
+<xs:element name="IncidentDelay" type="xs:float" default="0.2" />
+<xs:element name="Description" type="xs:string" />
+<xs:element name="Duration" type="xs:float" default="60.0" />
+<!--  <xs:element name="IncidentID" type="xs:int" />  -->
+<xs:element name="IncidentPosition" type="xs:string" />
+<xs:element name="Severity" default="Level 0">
+   <xs:simpleType>
+	  <xs:restriction base="xs:string">
+	  	 <xs:enumeration value="Level 0" />
+	  	 <xs:enumeration value="Level 1" />
+	  	 <xs:enumeration value="Level 2" />
+	  	 <xs:enumeration value="Level 3" />
+	  	 <xs:enumeration value="Level 4" />
+	  	 <xs:enumeration value="Level 5" />
+	  </xs:restriction>	
+   </xs:simpleType>
+</xs:element>
+<xs:element name="IncidentStartTime" type="xs:int" default="0" />
+<xs:element name="Visibility" type="xs:float" default="50.0" />
+
+<!-- Map & List Model Parameters-->
+<xs:element name="Caption" type="xs:string" default="GrooveNet Widget" />
+<xs:element name="MapDelay" type="xs:float" default="0.2" />
+<xs:element name="Follow" type="xs:string" default="" />
+<xs:element name="Height" type="xs:int" default="373" />
+<xs:element name="Width" type="xs:int" default="529" />
+<xs:element name="StartPos" type="xs:string" default="0,0" />
+<xs:element name="Zoom" type="xs:int" default="6" />
+<xs:element name="ListDelay" type="xs:float" default="0.2" />
+
+
+<xs:group name="NormalGroup">
+   <xs:sequence>
+      <xs:element name="NormalMean" type="xs:float" />
+      <xs:element name="NormalStdev" type="xs:float" />    
+   </xs:sequence>
+</xs:group>
+
+<xs:group name="PoissonGroup">
+   <xs:sequence>
+      <xs:element name="PoissonMean" type="xs:float" />  
+   </xs:sequence>
+</xs:group>
+
+<xs:group name="BernoulliGroup">
+   <xs:sequence>
+      <xs:element name="BernoulliProb" type="xs:float" />  
+   </xs:sequence>
+</xs:group>
+
+<xs:group name="BinomialGroup">
+   <xs:sequence>
+      <xs:element name="BinomialProb" type="xs:float" />
+      <xs:element name="BinomialUpBound" type="xs:int" />    
+   </xs:sequence>
+</xs:group>
+
+<xs:group name="UniformGroup">
+   <xs:sequence>
+      <xs:element name="UniformUpBound" type="xs:float" />
+      <xs:element name="UniformLowBound" type="xs:float" />    
+   </xs:sequence>
+</xs:group>
+
+<xs:group name="UserDefineGroup">
+   <xs:sequence>
+      <xs:element name="UserDefineValue" type="xs:float" /> 
+   </xs:sequence>
+</xs:group>
+
+<!-- definition of attributes -->
+<xs:attribute name="Project" type="xs:string" />
+<xs:attribute name="VehicleNum">
+   <xs:simpleType>
+	  <xs:restriction base="xs:int">
+	  	 <xs:minInclusive value="1" />
+	  </xs:restriction>
+   </xs:simpleType>
+</xs:attribute>
+<xs:attribute name="RSUNum">
+   <xs:simpleType>
+	  <xs:restriction base="xs:int">
+	  	 <xs:minInclusive value="1" />
+	  </xs:restriction>
+   </xs:simpleType>
+</xs:attribute>
+<xs:attribute name="IncidentNum">
+   <xs:simpleType>
+	  <xs:restriction base="xs:int">
+	  	 <xs:minInclusive value="1" />
+	  </xs:restriction>
+   </xs:simpleType>
+</xs:attribute>
+<xs:attribute name="RoleType">
+   <xs:simpleType>
+      <xs:restriction base="xs:string">
+         <xs:enumeration value="Authority" />
+         <xs:enumeration value="Attacker" />
+         <xs:enumeration value="Default" />
+      </xs:restriction>
+   </xs:simpleType>
+</xs:attribute>
+
+<!--
+<xs:attributeGroup name="NormalGroup">
+   <xs:attribute name="NormalMean" type="xs:float" />
+   <xs:attribute name="NormalStdev" type="xs:float" />
+</xs:attributeGroup>
+<xs:attribute name="PoissonMean" type="xs:float" />
+<xs:attribute name="BernoulliProb" type="xs:float" />
+<xs:attributeGroup name="BinomialGroup">
+   <xs:attribute name="BinomialProb" type="xs:float" />
+   <xs:attribute name="BinomialUpBound" type="xs:int" />
+</xs:attributeGroup>
+<xs:attributeGroup name="UniformGroup">
+   <xs:attribute name="UniformLowBound" type="xs:float" />
+   <xs:attribute name="UniformUpBound" type="xs:float" />
+</xs:attributeGroup>
+<xs:attribute name="UserDefVal" type="xs:float" />
+-->
+
+<xs:attribute name="DistributionType">
+<xs:simpleType>
+      <xs:restriction base="xs:string">
+         <xs:enumeration value="Normal" />
+         <xs:enumeration value="Poisson" />
+         <xs:enumeration value="Bernoulli" />
+         <xs:enumeration value="Binomial" />
+         <xs:enumeration value="Uniform" />
+         <xs:enumeration value="UserDefine" />
+      </xs:restriction>
+   </xs:simpleType>
+</xs:attribute>
+
+<!-- definition of complex elements -->
+<xs:element name="Simulation">
+   <xs:complexType>
+      <xs:sequence>
+		 <xs:element ref="VehicleModel" minOccurs="1" maxOccurs="unbounded" />
+		 <xs:element ref="RSUModel" minOccurs="1" maxOccurs="unbounded" />
+		 <xs:element ref="IncidentModel" minOccurs="1" maxOccurs="unbounded"/>
+	 	 <xs:element ref="MapModel" minOccurs="1" maxOccurs="1" />
+	 	 <xs:element ref="CarList" minOccurs="1" maxOccurs="1" />
+	 	 <xs:element ref="IncidentList" minOccurs="1" maxOccurs="1" />
+	 </xs:sequence>
+	 <xs:attribute ref="Project" use="optional" />
+   </xs:complexType>
+</xs:element>
+
+<!-- role model-->
+<xs:element name="RoleModel">
+   <xs:complexType>
+      <xs:all>
+	 	 <xs:element ref="DetectThresh" />
+	  	 <xs:element ref="ForwardThresh" />
+	 	 <xs:element ref="LieFreq" />
+	 	 <xs:element ref="LieThresh" />
+	 	 <xs:element ref="TrustLow" />
+	 	 <xs:element ref="TrustUp" />
+      </xs:all>
+      <xs:attribute ref="RoleType" />
+   </xs:complexType>
+</xs:element>
+
+<xs:element name="DetectThresh">
+   <xs:complexType>
+      <xs:choice>
+         <xs:group ref="NormalGroup" />
+         <xs:group ref="PoissonGroup" />
+         <xs:group ref="BernoulliGroup" />
+         <xs:group ref="BinomialGroup" />
+         <xs:group ref="UniformGroup" />
+         <xs:group ref="UserDefineGroup" />
+      </xs:choice>
+      <xs:attribute ref="DistributionType" />
+   </xs:complexType>
+</xs:element>
+
+<xs:element name="ForwardThresh">
+   <xs:complexType>
+      <xs:choice>
+         <xs:group ref="NormalGroup" />
+         <xs:group ref="PoissonGroup" />
+         <xs:group ref="BernoulliGroup" />
+         <xs:group ref="BinomialGroup" />
+         <xs:group ref="UniformGroup" />
+         <xs:group ref="UserDefineGroup" />
+      </xs:choice>
+      <xs:attribute ref="DistributionType" />
+   </xs:complexType>
+</xs:element>
+
+<xs:element name="LieFreq">
+   <xs:complexType>
+      <xs:choice>
+         <xs:group ref="NormalGroup" />
+         <xs:group ref="PoissonGroup" />
+         <xs:group ref="BernoulliGroup" />
+         <xs:group ref="BinomialGroup" />
+         <xs:group ref="UniformGroup" />
+         <xs:group ref="UserDefineGroup" />
+      </xs:choice>
+      <xs:attribute ref="DistributionType" />
+   </xs:complexType>
+</xs:element>
+
+<xs:element name="LieThresh">
+   <xs:complexType>
+      <xs:choice>
+         <xs:group ref="NormalGroup" />
+         <xs:group ref="PoissonGroup" />
+         <xs:group ref="BernoulliGroup" />
+         <xs:group ref="BinomialGroup" />
+         <xs:group ref="UniformGroup" />
+         <xs:group ref="UserDefineGroup" />
+      </xs:choice>
+      <xs:attribute ref="DistributionType" />
+   </xs:complexType>
+</xs:element>
+
+<xs:element name="TrustLow">
+   <xs:complexType>
+      <xs:choice>
+         <xs:group ref="NormalGroup" />
+         <xs:group ref="PoissonGroup" />
+         <xs:group ref="BernoulliGroup" />
+         <xs:group ref="BinomialGroup" />
+         <xs:group ref="UniformGroup" />
+         <xs:group ref="UserDefineGroup" />
+      </xs:choice>
+      <xs:attribute ref="DistributionType" />
+   </xs:complexType>
+</xs:element>
+
+<xs:element name="TrustUp">
+   <xs:complexType>
+      <xs:choice>
+         <xs:group ref="NormalGroup" />
+         <xs:group ref="PoissonGroup" />
+         <xs:group ref="BernoulliGroup" />
+         <xs:group ref="BinomialGroup" />
+         <xs:group ref="UniformGroup" />
+         <xs:group ref="UserDefineGroup" />
+      </xs:choice>
+      <xs:attribute ref="DistributionType" />
+   </xs:complexType>
+</xs:element>
+
+<!--
+<xs:element name="DetectThresh">
+   <xs:complexType>
+      <xs:choice>
+	 	 <xs:element ref="Normal" />
+	 	 <xs:element ref="Poisson" />
+	 	 <xs:element ref="Bernoulli" />
+	 	 <xs:element ref="Binomial" />
+	 	 <xs:element ref="Uniform" />
+	 	 <xs:element ref="UserDef" />
+      </xs:choice>
+   </xs:complexType>
+</xs:element>
+
+<xs:element name="ForwardThresh">
+   <xs:complexType>
+      <xs:choice>
+	 	 <xs:element ref="Normal" />
+	 	 <xs:element ref="Poisson" />
+	 	 <xs:element ref="Bernoulli" />
+	 	 <xs:element ref="Binomial" />
+	 	 <xs:element ref="Uniform" />
+	 	 <xs:element ref="UserDef" />
+      </xs:choice>
+   </xs:complexType>
+</xs:element>
+
+<xs:element name="LieFreq">
+   <xs:complexType>
+      <xs:choice>
+		 <xs:element ref="Normal" />
+		 <xs:element ref="Poisson" />
+		 <xs:element ref="Bernoulli" />
+		 <xs:element ref="Binomial" />
+		 <xs:element ref="Uniform" />
+		 <xs:element ref="UserDef" />
+      </xs:choice>
+   </xs:complexType>
+</xs:element>
+
+<xs:element name="LieThresh">
+   <xs:complexType>
+      <xs:choice>
+		 <xs:element ref="Normal" />
+		 <xs:element ref="Poisson" />
+		 <xs:element ref="Bernoulli" />
+		 <xs:element ref="Binomial" />
+		 <xs:element ref="Uniform" />
+		 <xs:element ref="UserDef" />
+      </xs:choice>
+   </xs:complexType>
+</xs:element>
+
+<xs:element name="TrustLow">
+   <xs:complexType>
+      <xs:choice>
+		 <xs:element ref="Normal" />
+		 <xs:element ref="Poisson" />
+		 <xs:element ref="Bernoulli" />
+		 <xs:element ref="Binomial" />
+		 <xs:element ref="Uniform" />
+		 <xs:element ref="UserDef" />
+      </xs:choice>
+   </xs:complexType>
+</xs:element>
+
+<xs:element name="TrustUp">
+   <xs:complexType>
+      <xs:choice>
+		 <xs:element ref="Normal" />
+		 <xs:element ref="Poisson" />
+		 <xs:element ref="Bernoulli" />
+		 <xs:element ref="Binomial" />
+		 <xs:element ref="Uniform" />
+		 <xs:element ref="UserDef" />
+      </xs:choice>
+   </xs:complexType>
+</xs:element>
+
+<xs:element name="UserDef">
+   <xs:complexType>
+      <xs:attribute ref="UserDefVal" />
+   </xs:complexType>
+</xs:element>
+
+<xs:element name="Normal">
+   <xs:complexType>
+		 <xs:attributeGroup ref="NormalGroup" />
+   </xs:complexType>
+</xs:element>
+
+<xs:element name="Poisson">
+   <xs:complexType>
+      <xs:attribute ref="PoissonMean" />
+   </xs:complexType>
+</xs:element>
+
+<xs:element name="Bernoulli">
+   <xs:complexType>
+      <xs:attribute ref="BernoulliProb" />
+   </xs:complexType>
+</xs:element>
+
+<xs:element name="Binomial">
+   <xs:complexType>
+	 	 <xs:attributeGroup ref="BinomialGroup" />
+   </xs:complexType>
+</xs:element>
+
+<xs:element name="Uniform">
+   <xs:complexType>
+	     <xs:attributeGroup ref="UniformGroup" />
+   </xs:complexType>
+</xs:element>
+-->
+
+<!-- comm model-->
+<xs:element name="SimpleCommModel">
+   <xs:complexType>
+      <xs:all>
+	 	 <xs:element ref="GateWay" />
+	 	 <xs:element ref="RbxJitter" />
+	 	 <xs:element ref="Rbx" />
+	 	 <xs:element ref="RbxInterval" />
+      </xs:all>
+   </xs:complexType>
+</xs:element>
+
+<!-- phys model-->
+<xs:element name="SimplePhysModel">
+   <xs:complexType>
+      <xs:all>
+	 	 <xs:element ref="MaxDistance" />
+	 	 <xs:element ref="MultiChannel" />
+      </xs:all>
+   </xs:complexType>
+</xs:element>
+
+<!-- trip model-->
+<xs:element name="RandomWalkModel">
+   <xs:complexType>
+	  <xs:all>
+	     <xs:element ref="StartAddress" />
+	  </xs:all>
+   </xs:complexType>
+</xs:element>
+
+<!-- mobility model-->
+<xs:element name="StreetSpeedModel">
+   <xs:complexType>
+	  <xs:all>
+	  	 <xs:element ref="MultiLane" />
+	  </xs:all>
+   </xs:complexType>
+</xs:element>
+
+<!-- vehicle model -->
+<xs:element name="VehicleModel">
+   <xs:complexType>
+      <xs:all>
+		 <!--  <xs:element ref="VehicleID" />  -->
+		 <xs:element ref="DetectRange" />
+		 <xs:element ref="VehicleStartTime" />
+		 <xs:element ref="VehicleDelay" />
+		 <xs:element ref="Log" />
+		 <xs:element ref="TrackSpeed" />
+		 <xs:element ref="RoleModel" />
+		 <xs:element ref="SimpleCommModel" />
+		 <xs:element ref="SimpleLinkModel" />
+		 <xs:element ref="SimplePhysModel" />
+		 <xs:element ref="RandomWalkModel" />
+		 <xs:element ref="StreetSpeedModel" />
+      </xs:all>
+      <xs:attribute ref="VehicleNum" use="required" />
+   </xs:complexType>
+</xs:element>
+
+<!-- road side unit model-->
+<xs:element name="RSUModel">
+   <xs:complexType>
+      <xs:all>
+		 <xs:element ref="RSUDelay" />
+		 <!--  <xs:element ref="RSUID" />  -->
+		 <xs:element ref="RSUPosition" />
+		 <xs:element ref="SimpleCommModel" />
+		 <xs:element ref="SimpleLinkModel" />
+		 <xs:element ref="SimplePhysModel" />
+      </xs:all>
+      <xs:attribute ref="RSUNum" use="required" />
+   </xs:complexType>
+</xs:element>
+
+<!-- incident model-->
+<xs:element name="IncidentModel">
+   <xs:complexType>
+      <xs:all>
+		 <xs:element ref="IncidentDelay" />
+		 <xs:element ref="Description" />
+		 <xs:element ref="Duration" />
+		 <!--  <xs:element ref="IncidentID" />  -->
+		 <xs:element ref="IncidentPosition" />
+		 <xs:element ref="Severity" />
+		 <xs:element ref="IncidentStartTime" />
+		 <xs:element ref="Visibility" />
+      </xs:all>
+      <xs:attribute ref="IncidentNum" use="required" />
+   </xs:complexType>
+</xs:element>
+
+<!-- map -->
+<xs:element name="MapModel">
+   <xs:complexType>
+      <xs:all>
+		 <xs:element ref="Caption" />
+		 <xs:element ref="MapDelay" />
+		 <xs:element ref="Follow" />
+		 <xs:element ref="Height" />
+		 <xs:element ref="Width" />
+		 <xs:element ref="StartPos" />
+		 <xs:element ref="Zoom" />
+      </xs:all>
+   </xs:complexType>
+</xs:element>
+
+<!-- car list-->
+<xs:element name="CarList">
+   <xs:complexType>
+      <xs:all>
+		 <xs:element ref="Caption" />
+		 <xs:element ref="Height" />
+		 <xs:element ref="Width" />
+		 <xs:element ref="ListDelay" />
+      </xs:all>
+   </xs:complexType>
+</xs:element>
+
+<!-- incident list-->
+<xs:element name="IncidentList">
+   <xs:complexType>
+      <xs:all>
+		 <xs:element ref="Caption" />
+		 <xs:element ref="Height" />
+		 <xs:element ref="Width" />
+		 <xs:element ref="ListDelay" />
+      </xs:all>
+   </xs:complexType>
+</xs:element>
+
+</xs:schema>

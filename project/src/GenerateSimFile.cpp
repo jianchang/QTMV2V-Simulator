@@ -8,6 +8,10 @@
 
 #include "GenerateSimFile.h"
 #include "MapDB.h"
+#include <math.h>
+
+#include <boost/algorithm/string/replace.hpp>
+#include <boost/algorithm/string/find_iterator.hpp>
 
 #define defaultDelay "0.2"
 #define defaultStartTime "0"
@@ -32,23 +36,100 @@
 
 #define baseID "192.168.0."
 
+#define PI 3.14
 
+int32_t factorial(int32_t num) 
+{
+    int32_t temp;
+    if(num <= 1) return 1;
+    temp = num * factorial(num - 1);
+    return temp;
+}
+
+float pdfOfNormal(float x, float mean, float stdev)
+{
+    float pdf = 1.0 / (stdev * sqrt(2 * PI)) * exp(-pow(x - mean, 2.0) / (2 * stdev * stdev));
+    return pdf;
+}
+
+float pdfOfPoisson(float mean, int32_t i)
+{
+    float pdf = pow(mean, i) / factorial(i) * exp(-mean);
+    return pdf;
+}
+
+float pdfOfBernoulli(float p, int b)
+{
+    if (b == 1)
+    {
+	return p;
+    }
+    else
+    {
+	return (1 - p);
+    }
+}
+
+float pdfOfBinomial(int t, float p, int32_t i)
+{
+    float pdf = (float)factorial(t) / (factorial(i) * factorial(t - i)) * (pow(p, i)  * pow(1 - p, t - i));
+    return pdf;
+}
+
+float pdfOfUniform(float a, float b)
+{
+    float pdf = 1.0 / (b - a);
+    return pdf;
+}
+
+// normal distribution
 float GenRandNum_NormalDtr(float mean, float stdev)
 { 
     int seed = (int)time(0);
     StochasticLib1 sto(seed);
-    double randNum = sto.Normal(mean, stdev);
+    float randNum = sto.Normal(mean, stdev);
     
-    return randNum; 
+    return pdfOfNormal(randNum, mean, stdev); 
 }
 
-float GenRandNum_PossionDtr(float mean)
+// possion distribution
+float GenRandNum_PoissonDtr(float mean)
 {
     int seed = (int)time(0);
     StochasticLib1 sto(seed);
-    double randNum = sto.Poisson(mean);
+    int32_t randNum = sto.Poisson(mean);
     
-    return randNum;
+    return pdfOfPoisson(mean, randNum);
+}
+
+// bernoulli distribution
+float GenRandNum_BernoulliDtr(float prob)
+{
+    int seed = (int)time(0);
+    StochasticLib1 sto(seed);
+    int randNum = sto.Bernoulli(prob);
+    
+    return pdfOfBernoulli(prob, randNum);
+}
+
+// binomial distribution
+float GenRandNum_BinomialDtr(int upperBound, float prob)
+{
+    int seed = (int)time(0);
+    StochasticLib1 sto(seed);
+    int32_t randNum = sto.Binomial(upperBound, prob);
+    
+    return pdfOfBinomial(upperBound, prob, randNum);
+}
+
+// uniform distribution
+float GenRandNum_UniformDtr(float lowerBound, float upperBound)
+{
+    //int seed = (int)time(0);
+    //StochasticLib1 sto(seed);
+    //float randNum = sto.Random();
+    
+    return pdfOfUniform(lowerBound, upperBound);
 }
 
 float GenRandNum(float minNum, float maxNum)
@@ -84,15 +165,63 @@ std::string FloatToString(float num)
 float StringToFloat(std::string str)
 {
     QString s(str);
-    float f = (float)StringToNumber(s);
+    float f = StringToNumber(s);
     return f;
 }
 
-std::string GenDetectThresh(int type, float mean, float stdev)
+int StringToInt(std::string str)
+{
+    int i = atoi(str.c_str());
+    return i;
+}
+
+float GenRand(int type, DtrParam param)
+{
+    float val;
+    switch ((DistrType)type)
+    {
+      case Normal:
+      {
+	  val = GenRandNum_NormalDtr(param.mean_Normal, param.stdev_Normal);
+	  break;
+      }
+      case Poisson:
+      {
+	  val = GenRandNum_PoissonDtr(param.mean_Poisson);
+	  break;
+      }
+      case Bernoulli:
+      {
+	 val = GenRandNum_BernoulliDtr(param.prob_Bernoulli);
+	 break;
+      }
+      case Binomial:
+      {
+        val = GenRandNum_BinomialDtr(param.upperBound_Binomial, param.prob_Binomial);
+	break;
+      }
+      case Uniform:
+      {
+	val = GenRandNum_UniformDtr(param.lowerBound_Uniform, param.upperBound_Uniform);
+	break;
+      }
+      default:
+      {
+	  val = GenRandNum_NormalDtr(param.mean_Normal, param.stdev_Normal);
+	  break;
+      }
+    }
+    
+    return val;
+}
+
+std::string GenDetectThresh(int type, DtrParam param)
+//std::string GenDetectThresh(int type, float mean, float stdev)
 {
     float val;
     std::string detectThresh;
     
+    /*
     switch ((DistrType)type)
     {
       case Normal:
@@ -103,33 +232,32 @@ std::string GenDetectThresh(int type, float mean, float stdev)
       {
 	  val = GenRandNum_PossionDtr(mean);
       }
-      case Uniform:
+      case Bernoulli:
       {
-	  // to be added
-      }
-      case Bernouli:
-      {
-	 // to be added
+	 val = GenRandNum_BernoulliDtr();
       }
       case Binomial:
       {
-        // to be added
+        val = GenRandNum_BinomialDtr();
       }
       default:
       {
 	  val = GenRandNum_NormalDtr(mean, stdev);
       }
     }
+    */
+    val = GenRand(type, param);
     detectThresh = FloatToString(val);
     
     return detectThresh;
 }
 
-std::string GenForwardThresh(int type, float mean, float stdev)
+std::string GenForwardThresh(int type, DtrParam param)
+//std::string GenForwardThresh(int type, float mean, float stdev)
 {
     float val;
     std::string forwardThresh;
-    
+    /*
     switch ((DistrType)type)
     {
       case Normal:
@@ -140,11 +268,7 @@ std::string GenForwardThresh(int type, float mean, float stdev)
       {
 	  val = GenRandNum_PossionDtr(mean);
       }
-      case Uniform:
-      {
-	  // to be added
-      }
-      case Bernouli:
+      case Bernoulli:
       {
 	 // to be added
       }
@@ -157,17 +281,19 @@ std::string GenForwardThresh(int type, float mean, float stdev)
 	  val = GenRandNum_NormalDtr(mean, stdev);
       }
     }
-    
+    */
+    val = GenRand(type, param);
     forwardThresh= FloatToString(val);
     
     return forwardThresh;
 }
 
-std::string GenLieThresh(int type, float mean, float stdev)
+std::string GenLieThresh(int type, DtrParam param)
+//std::string GenLieThresh(int type, float mean, float stdev)
 {
     float val;   
     std::string lieThresh;
-    
+    /*
     switch ((DistrType)type)
     {
       case Normal:
@@ -178,11 +304,7 @@ std::string GenLieThresh(int type, float mean, float stdev)
       {
 	  val = GenRandNum_PossionDtr(mean);
       }
-      case Uniform:
-      {
-	  // to be added
-      }
-      case Bernouli:
+      case Bernoulli:
       {
 	 // to be added
       }
@@ -195,17 +317,19 @@ std::string GenLieThresh(int type, float mean, float stdev)
 	  val = GenRandNum_NormalDtr(mean, stdev);
       }
     }
-    
+    */
+    val = GenRand(type, param);
     lieThresh= FloatToString(val);
     
     return lieThresh;
 }
 
-std::string GenLieFreq(int type, float mean, float stdev)
+std::string GenLieFreq(int type, DtrParam param)
+//std::string GenLieFreq(int type, float mean, float stdev)
 {
     float val;    
     std::string lieFreq;
-    
+    /*
     switch ((DistrType)type)
     {
       case Normal:
@@ -216,11 +340,7 @@ std::string GenLieFreq(int type, float mean, float stdev)
       {
 	  val = GenRandNum_PossionDtr(mean);
       }
-      case Uniform:
-      {
-	  // to be added
-      }
-      case Bernouli:
+      case Bernoulli:
       {
 	 // to be added
       }
@@ -233,17 +353,19 @@ std::string GenLieFreq(int type, float mean, float stdev)
 	  val = GenRandNum_NormalDtr(mean, stdev);
       }
     }
-    
+    */
+    val = GenRand(type, param);
     lieFreq = FloatToString(val);
     
     return lieFreq;
 }
 
-std::string GenTrustLowBound(int type, float mean, float stdev)
+std::string GenTrustLowBound(int type, DtrParam param)
+//std::string GenTrustLowBound(int type, float mean, float stdev)
 {
     float val;   
     std::string trustLowBound;
-    
+    /*
     switch ((DistrType)type)
     {
       case Normal:
@@ -254,11 +376,7 @@ std::string GenTrustLowBound(int type, float mean, float stdev)
       {
 	  val = GenRandNum_PossionDtr(mean);
       }
-      case Uniform:
-      {
-	  // to be added
-      }
-      case Bernouli:
+      case Bernoulli:
       {
 	 // to be added
       }
@@ -271,17 +389,19 @@ std::string GenTrustLowBound(int type, float mean, float stdev)
 	  val = GenRandNum_NormalDtr(mean, stdev);
       }
     }
-    
+    */
+    val = GenRand(type, param);
     trustLowBound = FloatToString(val);
     
     return trustLowBound;
 }
 
-std::string GenTrustUpBound(int type, float mean, float stdev)
+std::string GenTrustUpBound(int type, DtrParam param)
+//std::string GenTrustUpBound(int type, float mean, float stdev)
 {
     float val;   
     std::string trustUpBound;
-    
+    /*
     switch ((DistrType)type)
     {
       case Normal:
@@ -292,11 +412,7 @@ std::string GenTrustUpBound(int type, float mean, float stdev)
       {
 	  val = GenRandNum_PossionDtr(mean);
       }
-      case Uniform:
-      {
-	  // to be added
-      }
-      case Bernouli:
+      case Bernoulli:
       {
 	 // to be added
       }
@@ -309,7 +425,8 @@ std::string GenTrustUpBound(int type, float mean, float stdev)
 	  val = GenRandNum_NormalDtr(mean, stdev);
       }
     }
-    
+    */
+    val = GenRand(type, param);
     trustUpBound = FloatToString(val);
     
     return trustUpBound;
@@ -402,9 +519,12 @@ std::string GenDescription()
 
 std::string GenDuration()
 {
-    float mean = 60;
-    float stdev = 5;
-    float num = GenRandNum_NormalDtr(mean, stdev);
+    float mean = 60.0;
+    float stdev = 5.0;
+    
+    int seed = (int)time(0);
+    StochasticLib1 sto(seed);
+    float num = sto.Normal(mean, stdev);
     
     std::string duration = FloatToString(num);
     
@@ -440,9 +560,12 @@ std::string GenSeverity()
 
 std::string GenVisibility()
 {
-    float mean = 60;
-    float stdev = 10;
-    float num = GenRandNum_NormalDtr(mean, stdev);
+    float mean = 60.0;
+    float stdev = 10.0;
+
+    int seed = (int)time(0);
+    StochasticLib1 sto(seed);
+    float num = sto.Normal(mean, stdev);
     
     std::string visibility = FloatToString(num);
     
@@ -718,45 +841,221 @@ bool GenSimFile(int AttackerNum, int AuthorityNum, int DefaultNum, int IncidentN
 	}
 }
 
+DtrParam ReadParam(XMLNode node, std::string type, std::map<std::string, int> mapTypeList)
+{
+    DtrParam dtrParam;
+    std::string mean, stdev, prob, upBound, lowBound;
+    switch((DistrType)mapTypeList.find(type)->second)
+    {
+      case Normal:
+      {
+	  dtrParam.flag = 1;
+	  dtrParam.dtrType = 0;
+	  mean = node.getChildNodeWithAttribute("param", "name", "Mean").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Mean").getText() : "";
+	  stdev = node.getChildNodeWithAttribute("param", "name", "Stdev").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Stdev").getText() : "";
+	  if (mean != "" && stdev != "")
+	  {
+	      //detectThresh = GenDetectThresh(0, StringToFloat(mean), StringToFloat(stdev));
+	      dtrParam.mean_Normal = StringToFloat(mean);
+	      dtrParam.stdev_Normal = StringToFloat(stdev);
+	  }
+	  else if (mean != "" && stdev == "")
+	  {
+	      //detectThresh = GenDetectThresh(0, StringToFloat(mean), defaultDetectThreshStdev);
+	      dtrParam.mean_Normal = StringToFloat(mean);
+	      dtrParam.stdev_Normal = defaultDetectThreshStdev;
+	  }
+	  else if (mean == "" && stdev != "")
+	  {
+	      //detectThresh = GenDetectThresh(0, defaultDetectThreshMean, StringToFloat(stdev));
+	      dtrParam.mean_Normal = defaultDetectThreshMean;
+	      dtrParam.stdev_Normal = StringToFloat(stdev);
+	  }
+	  else
+	  {
+	      dtrParam.flag = 0;
+	  }
+	  break;
+      }
+      case Poisson:
+      {
+	  dtrParam.flag = 1;
+	  dtrParam.dtrType = 1;
+	  mean = node.getChildNodeWithAttribute("param", "name", "Mean").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Mean").getText() : "";
+	  if (mean != "")
+	  {
+	      dtrParam.mean_Normal = StringToFloat(mean);
+	  }
+	  else
+	  {
+	      dtrParam.flag = 0;
+	  }
+	  break;
+      }
+      case Bernoulli:
+      {
+	  dtrParam.flag = 1;
+	  dtrParam.dtrType = 2;
+	  prob = node.getChildNodeWithAttribute("param", "name", "Prob").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Prob").getText() : "";
+	  if (prob != "")
+	  {
+	      dtrParam.prob_Bernoulli = StringToFloat(prob);
+	  }
+	  else
+	  {
+	      dtrParam.flag = 0;
+	  }
+	  break;
+      }
+      case Binomial:
+      {
+	  dtrParam.flag = 1;
+	  dtrParam.dtrType = 3;
+	  prob = node.getChildNodeWithAttribute("param", "name", "Prob").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Prob").getText() : "";
+	  upBound = node.getChildNodeWithAttribute("param", "name", "UpBound").getText() != NULL ? node.getChildNodeWithAttribute("param","name","UpBound").getText() : "";
+	  if (prob != "" && upBound != "")
+	  {
+	      dtrParam.prob_Binomial = StringToFloat(prob);
+	      dtrParam.prob_Binomial = StringToInt(upBound);
+	  }
+	  else
+	  {
+	      dtrParam.flag = 0;
+	  }
+	  break;
+      }
+      case Uniform:
+      {
+	  dtrParam.flag = 1;
+	  dtrParam.dtrType = 4;
+	  lowBound = node.getChildNodeWithAttribute("param", "name", "LowBound").getText() != NULL ? node.getChildNodeWithAttribute("param","name","LowBound").getText() : "";
+	  upBound = node.getChildNodeWithAttribute("param", "name", "UpBound").getText() != NULL ? node.getChildNodeWithAttribute("param","name","UpBound").getText() : "";
+	  if (lowBound != "" && upBound != "")
+	  {
+	      dtrParam.lowerBound_Uniform = StringToFloat(lowBound);
+	      dtrParam.upperBound_Uniform = StringToFloat(upBound);
+	  }
+	  else
+	  {
+	      dtrParam.flag = 0;
+	  }
+	  break;
+      }
+      default:
+      {
+	  dtrParam.flag = 0;
+	  break;
+      }
+    }
+    
+    return dtrParam;
+}
+
 std::string ReadParamFromFile(std::string param, XMLNode node, std::string type, std::map<std::string, int> mapTypeList)
 {
+    DtrParam dtrParam;
     if (param == "DetectThresh")
     {
-	std::string detectThresh, mean, stdev;
-	switch((DistrType)mapTypeList.find(type)->second)
+	std::string detectThresh;
+	dtrParam = ReadParam(node, type, mapTypeList);
+	if (dtrParam.flag)
+	{
+	    detectThresh= GenDetectThresh(dtrParam.dtrType, dtrParam);
+	}
+	else
+	{
+	    detectThresh = GenDetectThresh();
+	}
+	/*switch((DistrType)mapTypeList.find(type)->second)
 	{
 	  case Normal:
 	  {
 	      mean = node.getChildNodeWithAttribute("param", "name", "Mean").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Mean").getText() : "";
 	      stdev = node.getChildNodeWithAttribute("param", "name", "Stdev").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Stdev").getText() : "";
 	      if (mean != "" && stdev != "")
-		  detectThresh = GenDetectThresh(0, StringToFloat(mean), StringToFloat(stdev));
+	      {
+		  //detectThresh = GenDetectThresh(0, StringToFloat(mean), StringToFloat(stdev));
+		  dtrParam.mean_Normal = StringToFloat(mean);
+		  dtrParam.stdev_Normal = StringToFloat(stdev);
+		  detectThresh = GenDetectThresh(0, dtrParam);
+	      }
 	      else if (mean != "" && stdev == "")
-		  detectThresh = GenDetectThresh(0, StringToFloat(mean), defaultDetectThreshStdev);
+	      {
+		  //detectThresh = GenDetectThresh(0, StringToFloat(mean), defaultDetectThreshStdev);
+		  dtrParam.mean_Normal = StringToFloat(mean);
+		  dtrParam.stdev_Normal = defaultDetectThreshStdev;
+		  detectThresh = GenDetectThresh(0, dtrParam);
+		  
+	      }
 	      else if (mean == "" && stdev != "")
-		  detectThresh = GenDetectThresh(0, defaultDetectThreshMean, StringToFloat(stdev));
+	      {
+		  //detectThresh = GenDetectThresh(0, defaultDetectThreshMean, StringToFloat(stdev));
+		  dtrParam.mean_Normal = defaultDetectThreshMean;
+		  dtrParam.stdev_Normal = StringToFloat(stdev);
+		  detectThresh = GenDetectThresh(0, dtrParam);
+	      }
 	      else
 		  detectThresh = GenDetectThresh();
 	      break;
 	  }
 	  case Poisson:
 	  {
-	      
+	      mean = node.getChildNodeWithAttribute("param", "name", "Mean").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Mean").getText() : "";
+	      if (mean != "")
+	      {
+		  dtrParam.mean_Normal = StringToFloat(mean);
+		  detectThresh = GenDetectThresh(1, dtrParam);
+	      }
+	      else
+	      {
+		  detectThresh = GenDetectThresh();
+	      }
 	      break;
 	  }
-	  case Uniform:
+	  case Bernoulli:
 	  {
-	      
-	      break;
-	  }
-	  case Bernouli:
-	  {
-	      
+	      prob = node.getChildNodeWithAttribute("param", "name", "Prob").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Prob").getText() : "";
+	      if (prob != "")
+	      {
+		  dtrParam.prob_Bernoulli = StringToFloat(prob);
+		  detectThresh = GenDetectThresh(2, dtrParam);
+	      }
+	      else
+	      {
+		  detectThresh = GenDetectThresh();
+	      }
 	      break;
 	  }
 	  case Binomial:
 	  {
-	      
+	      prob = node.getChildNodeWithAttribute("param", "name", "Prob").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Prob").getText() : "";
+	      upBound = node.getChildNodeWithAttribute("param", "name", "UpBound").getText() != NULL ? node.getChildNodeWithAttribute("param","name","UpBound").getText() : "";
+	      if (prob != "" && upBound != "")
+	      {
+		  dtrParam.prob_Binomial = StringToFloat(prob);
+		  dtrParam.prob_Binomial = StringToFloat(upBound);
+		  detectThresh = GenDetectThresh(3, dtrParam);
+	      }
+	      else
+	      {
+		  detectThresh = GenDetectThresh();
+	      }
+	      break;
+	  }
+	  case Uniform:
+	  {
+	      lowBound = node.getChildNodeWithAttribute("param", "name", "LowBound").getText() != NULL ? node.getChildNodeWithAttribute("param","name","LowBound").getText() : "";
+	      upBound = node.getChildNodeWithAttribute("param", "name", "UpBound").getText() != NULL ? node.getChildNodeWithAttribute("param","name","UpBound").getText() : "";
+	      if (lowBound != "" && upBound != "")
+	      {
+		  dtrParam.lowerBound_Uniform = StringToFloat(lowBound);
+		  dtrParam.upperBound_Uniform = StringToFloat(upBound);
+		  val = GenDetectThresh(4, dtrParam);
+	      }
+	      else
+	      {
+		  val = GenDetectThresh();
+	      }
 	      break;
 	  }
 	  default:
@@ -764,48 +1063,112 @@ std::string ReadParamFromFile(std::string param, XMLNode node, std::string type,
 	      detectThresh = GenDetectThresh();
 	      break;
 	  }
-	}
+	}*/
 	
 	return detectThresh;
     }
     
     if (param == "ForwardThresh")
     {
-	std::string forwardThresh, mean, stdev;
-	switch((DistrType)mapTypeList.find(type)->second)
+	std::string forwardThresh;
+	dtrParam = ReadParam(node, type, mapTypeList);
+	if (dtrParam.flag)
+	{
+	    forwardThresh= GenForwardThresh(dtrParam.dtrType, dtrParam);
+	}
+	else
+	{
+	    forwardThresh = GenForwardThresh();
+	}
+	/*switch((DistrType)mapTypeList.find(type)->second)
 	{
 	  case Normal:
 	  {
 	      mean = node.getChildNodeWithAttribute("param", "name", "Mean").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Mean").getText() : "";
 	      stdev = node.getChildNodeWithAttribute("param", "name", "Stdev").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Stdev").getText() : "";
 	      if (mean != "" && stdev != "")
-		  forwardThresh = GenForwardThresh(0, StringToFloat(mean), StringToFloat(stdev));
+	      {
+		  //forwardThresh = GenForwardThresh(0, StringToFloat(mean), StringToFloat(stdev));
+		  dtrParam.mean_Normal = StringToFloat(mean);
+		  dtrParam.stdev_Normal = StringToFloat(stdev);
+		  forwardThresh = GenForwardThresh(0, dtrParam);
+	      }
 	      else if (mean != "" && stdev == "")
-		  forwardThresh = GenForwardThresh(0, StringToFloat(mean), defaultForwardThreshStdev);
+	      {
+		  //forwardThresh = GenForwardThresh(0, StringToFloat(mean), defaultForwardThreshStdev);
+		  dtrParam.mean_Normal = StringToFloat(mean);
+		  dtrParam.stdev_Normal = defaultForwardThreshStdev;
+		  forwardThresh = GenForwardThresh(0, dtrParam);  
+	      }
 	      else if (mean == "" && stdev != "")
-		  forwardThresh = GenForwardThresh(0, defaultForwardThreshMean, StringToFloat(stdev));
+	      {
+		  //forwardThresh = GenForwardThresh(0, defaultForwardThreshMean, StringToFloat(stdev));
+		  dtrParam.mean_Normal = defaultForwardThreshMean;
+		  dtrParam.stdev_Normal = StringToFloat(stdev);
+		  forwardThresh = GenForwardThresh(0, dtrParam);
+	      }
 	      else
 		  forwardThresh = GenForwardThresh();
 	      break;
 	  }
 	  case Poisson:
 	  {
-	      
+	      mean = node.getChildNodeWithAttribute("param", "name", "Mean").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Mean").getText() : "";
+	      if (mean != "")
+	      {
+		  dtrParam.mean_Normal = StringToFloat(mean);
+		  forwardThresh = GenForwardThresh(1, dtrParam);
+	      }
+	      else
+	      {
+		  forwardThresh = GenForwardThresh();
+	      }
 	      break;
 	  }
-	  case Uniform:
+	  case Bernoulli:
 	  {
-	      
-	      break;
-	  }
-	  case Bernouli:
-	  {
-	      
+	      prob = node.getChildNodeWithAttribute("param", "name", "Prob").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Prob").getText() : "";
+	      if (prob != "")
+	      {
+		  dtrParam.prob_Bernoulli = StringToFloat(prob);
+		  forwardThresh = GenDetectThresh(2, dtrParam);
+	      }
+	      else
+	      {
+		  forwardThresh = GenDetectThresh();
+	      }
 	      break;
 	  }
 	  case Binomial:
 	  {
-	      
+	      prob = node.getChildNodeWithAttribute("param", "name", "Prob").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Prob").getText() : "";
+	      upBound = node.getChildNodeWithAttribute("param", "name", "UpBound").getText() != NULL ? node.getChildNodeWithAttribute("param","name","UpBound").getText() : "";
+	      if (prob != "" && upBound != "")
+	      {
+		  dtrParam.prob_Binomial = StringToFloat(prob);
+		  dtrParam.prob_Binomial = StringToFloat(upBound);
+		  forwardThresh = GenDetectThresh(3, dtrParam);
+	      }
+	      else
+	      {
+		  forwardThresh = GenDetectThresh();
+	      }
+	      break;
+	  }
+	  case Uniform:
+	  {
+	      lowBound = node.getChildNodeWithAttribute("param", "name", "LowBound").getText() != NULL ? node.getChildNodeWithAttribute("param","name","LowBound").getText() : "";
+	      upBound = node.getChildNodeWithAttribute("param", "name", "UpBound").getText() != NULL ? node.getChildNodeWithAttribute("param","name","UpBound").getText() : "";
+	      if (lowBound != "" && upBound != "")
+	      {
+		  dtrParam.lowerBound_Uniform = StringToFloat(lowBound);
+		  dtrParam.upperBound_Uniform = StringToFloat(upBound);
+		  val = GenDetectThresh(4, dtrParam);
+	      }
+	      else
+	      {
+		  val = GenDetectThresh();
+	      }
 	      break;
 	  }
 	  default:
@@ -813,97 +1176,226 @@ std::string ReadParamFromFile(std::string param, XMLNode node, std::string type,
 	      forwardThresh = GenForwardThresh();
 	      break;
 	  }
-	}
+	}*/
 	
 	return forwardThresh;
     }
     
     if (param == "LieFreq")
     {
-	std::string lieFreg, mean, stdev;
-	switch((DistrType)mapTypeList.find(type)->second)
+	std::string lieFreq; 
+	dtrParam = ReadParam(node, type, mapTypeList);
+	if (dtrParam.flag)
+	{
+	    lieFreq= GenLieFreq(dtrParam.dtrType, dtrParam);
+	}
+	else
+	{
+	    lieFreq = GenLieFreq();
+	}
+	/*switch((DistrType)mapTypeList.find(type)->second)
 	{
 	  case Normal:
 	  {
 	      mean = node.getChildNodeWithAttribute("param", "name", "Mean").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Mean").getText() : "";
 	      stdev = node.getChildNodeWithAttribute("param", "name", "Stdev").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Stdev").getText() : "";
 	      if (mean != "" && stdev != "")
-		  lieFreg = GenLieFreq(0, StringToFloat(mean), StringToFloat(stdev));
+	      {
+		  //lieFreq = GenLieFreq(0, StringToFloat(mean), StringToFloat(stdev));
+		  dtrParam.mean_Normal = StringToFloat(mean);
+		  dtrParam.stdev_Normal = StringToFloat(stdev);
+		  lieFreq = GenLieFreq(0, dtrParam);
+	      }
 	      else if (mean != "" && stdev == "")
-		  lieFreg = GenLieFreq(0, StringToFloat(mean), defaultLieFreqStdev);
+	      {
+		  //lieFreq = GenLieFreq(0, StringToFloat(mean), defaultLieFreqStdev);
+		  dtrParam.mean_Normal = StringToFloat(mean);
+		  dtrParam.stdev_Normal = defaultLieFreqStdev;
+		  lieFreq = GenLieFreq(0, dtrParam);
+		  
+	      }
 	      else if (mean == "" && stdev != "")
-		  lieFreg = GenLieFreq(0, defaultLieFreqMean, StringToFloat(stdev));
+	      {
+		  //lieFreq = GenLieFreq(0, defaultLieFreqMean, StringToFloat(stdev));
+		  dtrParam.mean_Normal = defaultLieFreqMean;
+		  dtrParam.stdev_Normal = StringToFloat(stdev);
+		  lieFreq = GenLieFreq(0, dtrParam);
+	      }
 	      else
-		  lieFreg = GenLieFreq();
+		  lieFreq = GenLieFreq();
 	      break;
 	  }
 	  case Poisson:
 	  {
-	      
+	      mean = node.getChildNodeWithAttribute("param", "name", "Mean").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Mean").getText() : "";
+	      if (mean != "")
+	      {
+		  dtrParam.mean_Normal = StringToFloat(mean);
+		  lieFreq = GenLieFreq(1, dtrParam);
+	      }
+	      else
+	      {
+		  lieFreq = GenLieFreq();
+	      }
 	      break;
 	  }
-	  case Uniform:
+	  case Bernoulli:
 	  {
-	      
-	      break;
-	  }
-	  case Bernouli:
-	  {
-	      
+	      prob = node.getChildNodeWithAttribute("param", "name", "Prob").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Prob").getText() : "";
+	      if (prob != "")
+	      {
+		  dtrParam.prob_Bernoulli = StringToFloat(prob);
+		  lieFreq = GenDetectThresh(2, dtrParam);
+	      }
+	      else
+	      {
+		  lieFreq = GenDetectThresh();
+	      }
 	      break;
 	  }
 	  case Binomial:
 	  {
-	      
+	      prob = node.getChildNodeWithAttribute("param", "name", "Prob").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Prob").getText() : "";
+	      upBound = node.getChildNodeWithAttribute("param", "name", "UpBound").getText() != NULL ? node.getChildNodeWithAttribute("param","name","UpBound").getText() : "";
+	      if (prob != "" && upBound != "")
+	      {
+		  dtrParam.prob_Binomial = StringToFloat(prob);
+		  dtrParam.prob_Binomial = StringToFloat(upBound);
+		  lieFreq = GenDetectThresh(3, dtrParam);
+	      }
+	      else
+	      {
+		  lieFreq = GenDetectThresh();
+	      }
+	      break;
+	  }
+	  case Uniform:
+	  {
+	      lowBound = node.getChildNodeWithAttribute("param", "name", "LowBound").getText() != NULL ? node.getChildNodeWithAttribute("param","name","LowBound").getText() : "";
+	      upBound = node.getChildNodeWithAttribute("param", "name", "UpBound").getText() != NULL ? node.getChildNodeWithAttribute("param","name","UpBound").getText() : "";
+	      if (lowBound != "" && upBound != "")
+	      {
+		  dtrParam.lowerBound_Uniform = StringToFloat(lowBound);
+		  dtrParam.upperBound_Uniform = StringToFloat(upBound);
+		  val = GenDetectThresh(4, dtrParam);
+	      }
+	      else
+	      {
+		  val = GenDetectThresh();
+	      }
 	      break;
 	  }
 	  default:
 	  {
-	      lieFreg = GenLieFreq();
+	      lieFreq = GenLieFreq();
 	      break;
 	  }
-	}
+	}*/
 	
-	return lieFreg;
+	return lieFreq;
     }
     
     if (param == "LieThresh")
     {
-	std::string lieThresh, mean, stdev;
-	switch((DistrType)mapTypeList.find(type)->second)
+	std::string lieThresh;
+	dtrParam = ReadParam(node, type, mapTypeList);
+	if (dtrParam.flag)
+	{
+	    lieThresh= GenLieThresh(dtrParam.dtrType, dtrParam);
+	}
+	else
+	{
+	    lieThresh = GenLieThresh();
+	}
+	/*switch((DistrType)mapTypeList.find(type)->second)
 	{
 	  case Normal:
 	  {
 	      mean = node.getChildNodeWithAttribute("param", "name", "Mean").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Mean").getText() : "";
 	      stdev = node.getChildNodeWithAttribute("param", "name", "Stdev").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Stdev").getText() : "";
 	      if (mean != "" && stdev != "")
-		  lieThresh = GenLieThresh(0, StringToFloat(mean), StringToFloat(stdev));
+	      {
+		  dtrParam.mean_Normal = StringToFloat(mean);
+		  dtrParam.stdev_Normal = StringToFloat(stdev);
+		  lieThresh = GenLieThresh(0, dtrParam);
+	      }
+		  //lieThresh = GenLieThresh(0, StringToFloat(mean), StringToFloat(stdev));
 	      else if (mean != "" && stdev == "")
-		  lieThresh = GenLieThresh(0, StringToFloat(mean), defaultLieThreshStdev);
+	      {
+		  dtrParam.mean_Normal = StringToFloat(mean);
+		  dtrParam.stdev_Normal = defaultLieThreshStdev;
+		  lieThresh = GenLieThresh(0, dtrParam);
+	      }
+		  //lieThresh = GenLieThresh(0, StringToFloat(mean), defaultLieThreshStdev);
 	      else if (mean == "" && stdev != "")
-		  lieThresh = GenLieThresh(0, defaultLieThreshMean, StringToFloat(stdev));
+	      {
+		  dtrParam.mean_Normal = defaultLieThreshMean;
+		  dtrParam.stdev_Normal = StringToFloat(stdev);
+		  lieThresh = GenLieThresh(0, dtrParam);
+	      }
+		  //lieThresh = GenLieThresh(0, defaultLieThreshMean, StringToFloat(stdev));
 	      else
 		  lieThresh = GenLieThresh();
 	      break;
 	  }
 	  case Poisson:
 	  {
-	      
+	      mean = node.getChildNodeWithAttribute("param", "name", "Mean").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Mean").getText() : "";
+	      if (mean != "")
+	      {
+		  dtrParam.mean_Normal = StringToFloat(mean);
+		  lieThresh = GenLieThresh(1, dtrParam);
+	      }
+	      else
+	      {
+		  lieThresh = GenLieThresh();
+	      }
 	      break;
 	  }
-	  case Uniform:
+	  case Bernoulli:
 	  {
-	      
-	      break;
-	  }
-	  case Bernouli:
-	  {
-	      
+	      prob = node.getChildNodeWithAttribute("param", "name", "Prob").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Prob").getText() : "";
+	      if (prob != "")
+	      {
+		  dtrParam.prob_Bernoulli = StringToFloat(prob);
+		  lieThresh = GenDetectThresh(2, dtrParam);
+	      }
+	      else
+	      {
+		  lieThresh = GenDetectThresh();
+	      }
 	      break;
 	  }
 	  case Binomial:
 	  {
-	      
+	      prob = node.getChildNodeWithAttribute("param", "name", "Prob").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Prob").getText() : "";
+	      upBound = node.getChildNodeWithAttribute("param", "name", "UpBound").getText() != NULL ? node.getChildNodeWithAttribute("param","name","UpBound").getText() : "";
+	      if (prob != "" && upBound != "")
+	      {
+		  dtrParam.prob_Binomial = StringToFloat(prob);
+		  dtrParam.prob_Binomial = StringToFloat(upBound);
+		  lieThresh = GenDetectThresh(3, dtrParam);
+	      }
+	      else
+	      {
+		  lieThresh = GenDetectThresh();
+	      }
+	      break;
+	  }
+	  case Uniform:
+	  {
+	      lowBound = node.getChildNodeWithAttribute("param", "name", "LowBound").getText() != NULL ? node.getChildNodeWithAttribute("param","name","LowBound").getText() : "";
+	      upBound = node.getChildNodeWithAttribute("param", "name", "UpBound").getText() != NULL ? node.getChildNodeWithAttribute("param","name","UpBound").getText() : "";
+	      if (lowBound != "" && upBound != "")
+	      {
+		  dtrParam.lowerBound_Uniform = StringToFloat(lowBound);
+		  dtrParam.upperBound_Uniform = StringToFloat(upBound);
+		  val = GenDetectThresh(4, dtrParam);
+	      }
+	      else
+	      {
+		  val = GenDetectThresh();
+	      }
 	      break;
 	  }
 	  default:
@@ -911,48 +1403,112 @@ std::string ReadParamFromFile(std::string param, XMLNode node, std::string type,
 	      lieThresh = GenLieThresh();
 	      break;
 	  }
-	}
+	}*/
 	
 	return lieThresh;
     }
     
     if (param == "TrustLow")
     {
-	std::string trustLowBound, mean, stdev;
-	switch((DistrType)mapTypeList.find(type)->second)
+	std::string trustLowBound;
+	dtrParam = ReadParam(node, type, mapTypeList);
+	if (dtrParam.flag)
+	{
+	    trustLowBound= GenTrustLowBound(dtrParam.dtrType, dtrParam);
+	}
+	else
+	{
+	    trustLowBound = GenTrustLowBound();
+	}
+	/*switch((DistrType)mapTypeList.find(type)->second)
 	{
 	  case Normal:
 	  {
 	      mean = node.getChildNodeWithAttribute("param", "name", "Mean").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Mean").getText() : "";
 	      stdev = node.getChildNodeWithAttribute("param", "name", "Stdev").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Stdev").getText() : "";
 	      if (mean != "" && stdev != "")
-		  trustLowBound = GenTrustLowBound(0, StringToFloat(mean), StringToFloat(stdev));
+	      {
+		  dtrParam.mean_Normal = StringToFloat(mean);
+		  dtrParam.stdev_Normal = StringToFloat(stdev);
+		  trustLowBound = GenTrustLowBound(0, dtrParam);
+	      }
+		  //trustLowBound = GenTrustLowBound(0, StringToFloat(mean), StringToFloat(stdev));
 	      else if (mean != "" && stdev == "")
-		  trustLowBound = GenTrustLowBound(0, StringToFloat(mean), defaultTrustLowStdev);
+	      {
+		  dtrParam.mean_Normal = StringToFloat(mean);
+		  dtrParam.stdev_Normal = defaultTrustLowStdev;
+		  trustLowBound = GenTrustLowBound(0, dtrParam);
+	      }
+		  //trustLowBound = GenTrustLowBound(0, StringToFloat(mean), defaultTrustLowStdev);
 	      else if (mean == "" && stdev != "")
-		  trustLowBound = GenTrustLowBound(0, defaultTrustLowMean, StringToFloat(stdev));
+	      {
+		  dtrParam.mean_Normal = defaultTrustLowMean;
+		  dtrParam.stdev_Normal = StringToFloat(stdev);
+		  trustLowBound = GenTrustLowBound(0, dtrParam);
+	      }
+		  //trustLowBound = GenTrustLowBound(0, defaultTrustLowMean, StringToFloat(stdev));
 	      else
 		  trustLowBound = GenTrustLowBound();
 	      break;
 	  }
 	  case Poisson:
 	  {
-	      
+	      mean = node.getChildNodeWithAttribute("param", "name", "Mean").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Mean").getText() : "";
+	      if (mean != "")
+	      {
+		  dtrParam.mean_Normal = StringToFloat(mean);
+		  trustLowBound = GenTrustLowBound(1, dtrParam);
+	      }
+	      else
+	      {
+		  trustLowBound = GenTrustLowBound();
+	      }
 	      break;
 	  }
-	  case Uniform:
+	  case Bernoulli:
 	  {
-	      
-	      break;
-	  }
-	  case Bernouli:
-	  {
-	      
+	      prob = node.getChildNodeWithAttribute("param", "name", "Prob").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Prob").getText() : "";
+	      if (prob != "")
+	      {
+		  dtrParam.prob_Bernoulli = StringToFloat(prob);
+		  trustLowBound = GenDetectThresh(2, dtrParam);
+	      }
+	      else
+	      {
+		  trustLowBound = GenDetectThresh();
+	      }
 	      break;
 	  }
 	  case Binomial:
 	  {
-	      
+	      prob = node.getChildNodeWithAttribute("param", "name", "Prob").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Prob").getText() : "";
+	      upBound = node.getChildNodeWithAttribute("param", "name", "UpBound").getText() != NULL ? node.getChildNodeWithAttribute("param","name","UpBound").getText() : "";
+	      if (prob != "" && upBound != "")
+	      {
+		  dtrParam.prob_Binomial = StringToFloat(prob);
+		  dtrParam.prob_Binomial = StringToFloat(upBound);
+		  trustLowBound = GenDetectThresh(3, dtrParam);
+	      }
+	      else
+	      {
+		  trustLowBound = GenDetectThresh();
+	      }
+	      break;
+	  }
+	  case Uniform:
+	  {
+	      lowBound = node.getChildNodeWithAttribute("param", "name", "LowBound").getText() != NULL ? node.getChildNodeWithAttribute("param","name","LowBound").getText() : "";
+	      upBound = node.getChildNodeWithAttribute("param", "name", "UpBound").getText() != NULL ? node.getChildNodeWithAttribute("param","name","UpBound").getText() : "";
+	      if (lowBound != "" && upBound != "")
+	      {
+		  dtrParam.lowerBound_Uniform = StringToFloat(lowBound);
+		  dtrParam.upperBound_Uniform = StringToFloat(upBound);
+		  val = GenDetectThresh(4, dtrParam);
+	      }
+	      else
+	      {
+		  val = GenDetectThresh();
+	      }
 	      break;
 	  }
 	  default:
@@ -960,48 +1516,112 @@ std::string ReadParamFromFile(std::string param, XMLNode node, std::string type,
 	      trustLowBound = GenTrustLowBound();
 	      break;
 	  }
-	}
+	}*/
 	
 	return trustLowBound;
     }
     
-    if (param == "TrusUp")
+    if (param == "TrustUp")
     {
-	std::string trustUpBound, mean, stdev;
-	switch((DistrType)mapTypeList.find(type)->second)
+	std::string trustUpBound;
+	dtrParam = ReadParam(node, type, mapTypeList);
+	if (dtrParam.flag)
+	{
+	    trustUpBound= GenTrustUpBound(dtrParam.dtrType, dtrParam);
+	}
+	else
+	{
+	    trustUpBound = GenTrustUpBound();
+	}
+	/*switch((DistrType)mapTypeList.find(type)->second)
 	{
 	  case Normal:
 	  {
 	      mean = node.getChildNodeWithAttribute("param", "name", "Mean").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Mean").getText() : "";
 	      stdev = node.getChildNodeWithAttribute("param", "name", "Stdev").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Stdev").getText() : "";
 	      if (mean != "" && stdev != "")
-		  trustUpBound = GenTrustUpBound(0, StringToFloat(mean), StringToFloat(stdev));
+	      {
+		  dtrParam.mean_Normal = StringToFloat(mean);
+		  dtrParam.stdev_Normal = StringToFloat(stdev);
+		  trustUpBound = GenTrustUpBound(0, dtrParam);
+	      }
+		  //trustUpBound = GenTrustUpBound(0, StringToFloat(mean), StringToFloat(stdev));
 	      else if (mean != "" && stdev == "")
-		  trustUpBound = GenTrustUpBound(0, StringToFloat(mean), defaultTrustUpStdev);
+	      {
+		  dtrParam.mean_Normal = StringToFloat(mean);
+		  dtrParam.stdev_Normal = defaultTrustUpStdev;
+		  trustUpBound = GenTrustUpBound(0, dtrParam);
+	      }
+		  //trustUpBound = GenTrustUpBound(0, StringToFloat(mean), defaultTrustUpStdev);
 	      else if (mean == "" && stdev != "")
-		  trustUpBound = GenTrustUpBound(0, defaultTrustUpMean, StringToFloat(stdev));
+	      {
+		  dtrParam.mean_Normal = defaultTrustUpMean;
+		  dtrParam.stdev_Normal = StringToFloat(stdev);
+		  trustUpBound = GenTrustUpBound(0, dtrParam);
+	      }
+		  //trustUpBound = GenTrustUpBound(0, defaultTrustUpMean, StringToFloat(stdev));
 	      else
 		  trustUpBound = GenTrustUpBound();
 	      break;
 	  }
 	  case Poisson:
 	  {
-	      
+	      mean = node.getChildNodeWithAttribute("param", "name", "Mean").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Mean").getText() : "";
+	      if (mean != "")
+	      {
+		  dtrParam.mean_Normal = StringToFloat(mean);
+		  trustUpBound = GenTrustUpBound(1, dtrParam);
+	      }
+	      else
+	      {
+		  trustUpBound = GenTrustUpBound();
+	      }
 	      break;
 	  }
-	  case Uniform:
+	  case Bernoulli:
 	  {
-	      
-	      break;
-	  }
-	  case Bernouli:
-	  {
-	      
+	      prob = node.getChildNodeWithAttribute("param", "name", "Prob").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Prob").getText() : "";
+	      if (prob != "")
+	      {
+		  dtrParam.prob_Bernoulli = StringToFloat(prob);
+		  trustUpBound = GenDetectThresh(2, dtrParam);
+	      }
+	      else
+	      {
+		  trustUpBound = GenDetectThresh();
+	      }
 	      break;
 	  }
 	  case Binomial:
 	  {
-	      
+	      prob = node.getChildNodeWithAttribute("param", "name", "Prob").getText() != NULL ? node.getChildNodeWithAttribute("param","name","Prob").getText() : "";
+	      upBound = node.getChildNodeWithAttribute("param", "name", "UpBound").getText() != NULL ? node.getChildNodeWithAttribute("param","name","UpBound").getText() : "";
+	      if (prob != "" && upBound != "")
+	      {
+		  dtrParam.prob_Binomial = StringToFloat(prob);
+		  dtrParam.prob_Binomial = StringToFloat(upBound);
+		  trustUpBound = GenDetectThresh(3, dtrParam);
+	      }
+	      else
+	      {
+		  trustUpBound = GenDetectThresh();
+	      }
+	      break;
+	  }
+	  case Uniform:
+	  {
+	      lowBound = node.getChildNodeWithAttribute("param", "name", "LowBound").getText() != NULL ? node.getChildNodeWithAttribute("param","name","LowBound").getText() : "";
+	      upBound = node.getChildNodeWithAttribute("param", "name", "UpBound").getText() != NULL ? node.getChildNodeWithAttribute("param","name","UpBound").getText() : "";
+	      if (lowBound != "" && upBound != "")
+	      {
+		  dtrParam.lowerBound_Uniform = StringToFloat(lowBound);
+		  dtrParam.upperBound_Uniform = StringToFloat(upBound);
+		  val = GenDetectThresh(4, dtrParam);
+	      }
+	      else
+	      {
+		  val = GenDetectThresh();
+	      }
 	      break;
 	  }
 	  default:
@@ -1009,7 +1629,7 @@ std::string ReadParamFromFile(std::string param, XMLNode node, std::string type,
 	      trustUpBound = GenTrustUpBound();
 	      break;
 	  }
-	}
+	}*/
 	
 	return trustUpBound;
     }
@@ -1115,16 +1735,16 @@ bool GenSimFile(const char * filename)
     //mapMobilityParamList["MobilityType"] = 0;
     mapMobilityParamList["MultiLane"] = 0;
     
-    std::map<std::string, int> mapDtrParamList;
-    mapDtrParamList["Mean"] = 0;
-    mapDtrParamList["StdDev"] = 1;
+    //std::map<std::string, int> mapDtrParamList;
+    //mapDtrParamList["Mean"] = 0;
+    //mapDtrParamList["StdDev"] = 1;
     
     std::map<std::string, int> mapDtrTypeList;
     mapDtrTypeList["Normal"] = 0;
     mapDtrTypeList["Poisson"] = 1;
-    mapDtrTypeList["Uniform"] = 2;
-    mapDtrTypeList["Bernouli"] = 3;
-    mapDtrTypeList["Binomial"] = 4;
+    mapDtrTypeList["Bernoulli"] = 2;
+    mapDtrTypeList["Binomial"] = 3;
+    mapDtrTypeList["Uniform"] = 4;
     
     //-----------------------------------------------
     
@@ -1471,8 +2091,7 @@ bool GenSimFile(const char * filename)
 							  /*if (subNodeModelParamOfVehicle.getText() != NULL)
 							      detectThresh = subNodeModelParamOfVehicle.getText();
 							  else
-							      detectThresh = GenDetectThresh();
-							  */
+							      detectThresh = GenDetectThresh();*/
 							  if ((vehicleModelParamStr = subNodeModelParamOfVehicle.getAttribute("type")) != NULL)
 							  {
 							      detectThresh = ReadParamFromFile("DetectThresh", subNodeModelParamOfVehicle, vehicleModelParamStr, mapDtrTypeList);
@@ -1481,47 +2100,87 @@ bool GenSimFile(const char * filename)
 							  {
 							      detectThresh = GenDetectThresh();
 							  }
-							  
 							  break;
 						      }
 						      case ForwardThresh:
 						      {
-							  if (subNodeModelParamOfVehicle.getText() != NULL)
+							  /*if (subNodeModelParamOfVehicle.getText() != NULL)
 							      forwardThresh = subNodeModelParamOfVehicle.getText();
 							  else
+							      forwardThresh = GenForwardThresh();*/
+							  if ((vehicleModelParamStr = subNodeModelParamOfVehicle.getAttribute("type")) != NULL)
+							  {
+							      forwardThresh = ReadParamFromFile("ForwardThresh", subNodeModelParamOfVehicle, vehicleModelParamStr, mapDtrTypeList);
+							  }
+							  else
+							  {
 							      forwardThresh = GenForwardThresh();
+							  }
+							  
 							  break;
 						      }
 						      case LieFreq:
 						      {
-							  if (subNodeModelParamOfVehicle.getText() != NULL)
+							  /*if (subNodeModelParamOfVehicle.getText() != NULL)
 							      lieFreq = subNodeModelParamOfVehicle.getText();
 							  else
+							      lieFreq = GenLieFreq();*/
+							  if ((vehicleModelParamStr = subNodeModelParamOfVehicle.getAttribute("type")) != NULL)
+							  {
+							      lieFreq = ReadParamFromFile("LieFreq", subNodeModelParamOfVehicle, vehicleModelParamStr, mapDtrTypeList);
+							  }
+							  else
+							  {
 							      lieFreq = GenLieFreq();
+							  }
 							  break;
 						      }
 						      case LieThresh:
 						      {
-							  if (subNodeModelParamOfVehicle.getText() != NULL)
+							  /*if (subNodeModelParamOfVehicle.getText() != NULL)
 							      lieThresh = subNodeModelParamOfVehicle.getText();
 							  else
+							      lieThresh = GenLieThresh();*/
+							  if ((vehicleModelParamStr = subNodeModelParamOfVehicle.getAttribute("type")) != NULL)
+							  {
+							      lieThresh = ReadParamFromFile("LieThresh", subNodeModelParamOfVehicle, vehicleModelParamStr, mapDtrTypeList);
+							  }
+							  else
+							  {
 							      lieThresh = GenLieThresh();
+							  }
 							  break;
 						      }
 						      case TrustLow:
 						      {
-							  if (subNodeModelParamOfVehicle.getText() != NULL)
+							  /*if (subNodeModelParamOfVehicle.getText() != NULL)
 							      trustLowerBound = subNodeModelParamOfVehicle.getText();
 							  else
+							      trustLowerBound = GenTrustLowBound();*/
+							  if ((vehicleModelParamStr = subNodeModelParamOfVehicle.getAttribute("type")) != NULL)
+							  {
+							      trustLowerBound = ReadParamFromFile("TrustLow", subNodeModelParamOfVehicle, vehicleModelParamStr, mapDtrTypeList);
+							  }
+							  else
+							  {
 							      trustLowerBound = GenTrustLowBound();
+							  }
 							  break;
 						      }
 						      case TrustUp:
 						      {
-							  if (subNodeModelParamOfVehicle.getText() != NULL)
+							  /*if (subNodeModelParamOfVehicle.getText() != NULL)
 							      trustUpperBound = subNodeModelParamOfVehicle.getText();
 							  else
+							      trustUpperBound = GenTrustUpBound();*/
+							  if ((vehicleModelParamStr = subNodeModelParamOfVehicle.getAttribute("type")) != NULL)
+							  {
+							      trustUpperBound = ReadParamFromFile("TrustUp", subNodeModelParamOfVehicle, vehicleModelParamStr, mapDtrTypeList);
+							  }
+							  else
+							  {
 							      trustUpperBound = GenTrustUpBound();
+							  }
 							  break;
 						      }
 						      default:
@@ -1605,6 +2264,7 @@ bool GenSimFile(const char * filename)
 				  }
 			      }
 			      
+			      // comm
 			      if (commType == "SimpleComm")
 			      {
 				  vehicleComm = "SimpleCommModel" + IntToString(j+simCommNum);
@@ -1612,12 +2272,14 @@ bool GenSimFile(const char * filename)
 				  simFile << "GATEWAY=\"" + vehicleGateWay + "\" " + "RBXJITTER=\"" + vehicleRbxJitter + "\" " + "REBROADCAST=\"" + vehicleRbx + "\" " + "REBROADCASTINTERVAL=\"" + vehicleRbxInterval + "\"\n\n";
 			      }
 			      
+			      // link
 			      if (linkType == "SimpleLink")
 			      { 
 				  vehicleLink = "SimpleLinkModel" + IntToString(j+simLinkNum);
 				  simFile << "MODEL=\"" + vehicleLink + "\" " + "TYPE=\"SimpleLinkModel\"\n\n";
 			      }
 			      
+			      // phys
 			      if (physType == "SimplePhys")
 			      {
 				  vehiclePhys = "SimplePhysModel" + IntToString(j+simPhysNum);
@@ -1625,13 +2287,30 @@ bool GenSimFile(const char * filename)
 				  simFile << "MAXDISTANCE=\"" + vehicleMaxDistance + "\" " + "MULTICHANNEL=\"" + vehicleMultiChannel + "\"\n\n";
 			      }
 			      
+			      // role
 			      if (roleType == "Attacker")
 			      {
 				  vehicleRole = "AttackerRoleModel" + IntToString(j+attNum);
 				  simFile << "MODEL=\"" + vehicleRole + "\" " + "TYPE=\"AttackerRoleModel\"\n";
 				  simFile << "DETECTION THRESHOLD=\"" + detectThresh + "\" " + "FORWARD THRESHOLD=\"" + forwardThresh + "\" " + "LIE FREQUENCY=\"" + lieFreq + "\" " + "LIE THRESHOLD=\"" + lieThresh + "\" " + "TRUST LOWER BOUND=\"" + trustLowerBound + "\" " + "TRUST UPPER BOUND=\"" + trustUpperBound + "\"\n\n";
+				  attNum++;
+			      }
+			      else if (roleType == "Authority")
+			      {
+				  vehicleRole = "AuthorityRoleModel" + IntToString(j+authNum);
+				  simFile << "MODEL=\"" + vehicleRole + "\" " + "TYPE=\"AuthorityRoleModel\"\n";
+				  simFile << "DETECTION THRESHOLD=\"" + detectThresh + "\" " + "FORWARD THRESHOLD=\"" + forwardThresh + "\" " + "LIE THRESHOLD=\"" + lieThresh + "\" " + "TRUST LOWER BOUND=\"" + trustLowerBound + "\" " + "TRUST UPPER BOUND=\"" + trustUpperBound + "\"\n\n";
+				  authNum++;
+			      }
+			      else if (roleType == "Default")
+			      {
+				  vehicleRole = "DefaultRoleModel" + IntToString(j+deftNum);
+				  simFile << "MODEL=\"" + vehicleRole + "\" " + "TYPE=\"DefaultRoleModel\"\n";
+				  simFile << "DETECTION THRESHOLD=\"" + detectThresh + "\" " + "FORWARD THRESHOLD=\"" + forwardThresh + "\" " + "LIE THRESHOLD=\"" + lieThresh + "\" " + "TRUST LOWER BOUND=\"" + trustLowerBound + "\" " + "TRUST UPPER BOUND=\"" + trustUpperBound + "\"\n\n";
+				  deftNum++;
 			      }
 			      
+			      // trip
 			      if (tripType == "RandomWalk")
 			      {
 				  vehicleTrip = "RandomWalkModel" + IntToString(j+randWalkNum);
@@ -1639,6 +2318,7 @@ bool GenSimFile(const char * filename)
 				  simFile << "START=\"" + startAddress + "\"\n\n";
 			      }
 			      
+			      // mobility
 			      if (mobilityType == "StreetSpeed")
 			      {
 				  vehicleMobility = "StreetSpeedModel" + IntToString(j+strtSpdNum);
@@ -1654,7 +2334,7 @@ bool GenSimFile(const char * filename)
 			  simCommNum += vecNum;
 			  simLinkNum += vecNum;
 			  simPhysNum += vecNum;
-			  attNum += vecNum;
+			  //attNum += vecNum;
 			  randWalkNum += vecNum;
 			  strtSpdNum += vecNum;
 			  vehicleNum += vecNum;
@@ -1993,7 +2673,7 @@ bool GenSimFile(const char * filename)
 				  }
 			      }
 			      
-			      simFile << "MODEL=\"IncidentModel" + IntToString(j+incidentNum) + "\" " + "TYPE=\"IncidentModel" + "\"\n";;
+			      simFile << "MODEL=\"IncidentModel" + IntToString(j+incidentNum) + "\" " + "TYPE=\"IncidentModel" + "\"\n";
 			      simFile << "DELAY=\"" + incidentDelay + "\" " + "DESCRIPTION=\"" + description + "\" " + "DURATION=\"" + duration + "\" " + "INCIDENT ID=\"" + incidentID + "\" " + "POSITION=\"" + incidentPosition + "\" " + "SEVERITY=\"" + severity + "\" " + "START=\"" + incidentStartTime + "\" " + "VISIBILITY=\"" + visibility + "\"\n\n";
 			  }
 			  incidentNum += incNum;
@@ -2277,5 +2957,41 @@ bool GenSimFile(const char * filename)
 	std::cout << "Can't open simulation file\n";
 	return false;
     }
+    
+}
+
+
+void SimFile(const char* fileName)
+{
+    // read from simulation file
+    std::ifstream fin(fileName);
+    std::ostringstream oss;
+    oss << fin.rdbuf();
+    std::string file_contents = oss.str();
+    fin.close();
+    
+    // find and replace address parameters
+    int count = 0;
+    for(boost::find_iterator<std::string::iterator> iter = boost::make_find_iterator(file_contents, boost::first_finder("START=\"\"", boost::is_iequal()));
+	iter != boost::find_iterator<std::string::iterator>();
+	++iter)
+    {
+	boost::replace_first(file_contents, boost::copy_range<std::string>(*iter), "START=\"" + GenAddress() + "\"");
+      
+    }
+    
+    for(boost::find_iterator<std::string::iterator> iter = boost::make_find_iterator(file_contents, boost::first_finder("POSITION=\"\"", boost::is_iequal()));
+	iter != boost::find_iterator<std::string::iterator>();
+	++iter)
+    {
+	boost::replace_first(file_contents, boost::copy_range<std::string>(*iter), "POSITION=\"" + GenAddress() + "\"");
+      
+    }
+    
+    // write to simulation file
+    std::ofstream fout(fileName);
+    fout << file_contents;
+    
+    fout.close();
     
 }

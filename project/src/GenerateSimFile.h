@@ -40,19 +40,18 @@
 
 
 // default values
-#define defaultDetectThreshMean 0.6
-#define defaultDetectThreshStdev 0.2
-#define defaultForwardThreshMean 0.7
-#define defaultForwardThreshStdev 0.2
+#define defaultDetectThreshMean 6.0
+#define defaultDetectThreshStdev 2.0
+#define defaultForwardThreshMean 7.0
+#define defaultForwardThreshStdev 2.0
 #define defaultLieFreqMean 10.0
 #define defaultLieFreqStdev 5.0
-#define defaultLieThreshMean 0.4
-#define defaultLieThreshStdev 0.2
-#define defaultTrustLowMean 0.4
-#define defaultTrustLowStdev 0.1
-#define defaultTrustUpMean 0.7
-#define defaultTrustUpStdev 0.1
-
+#define defaultLieThreshMean 4.0
+#define defaultLieThreshStdev 2.0
+#define defaultTrustLowMean 4.0
+#define defaultTrustLowStdev 1.0
+#define defaultTrustUpMean 7.0
+#define defaultTrustUpStdev 1.0
 
 typedef enum ModelListEnum
 {
@@ -168,21 +167,65 @@ typedef enum MobilityParamEnum
 typedef enum DistrParamEnum
 {
     Mean = 0,
-    StdDev =1,
+    StdDev = 1,
+    Prob = 2,
+    UpperBound = 3,
 } DistrParam;
 
 typedef enum DistrTypeEnum
 {
     Normal= 0,
     Poisson = 1,
-    Uniform = 2,
-    Bernouli = 3,
-    Binomial = 4,
+    Bernoulli = 2,
+    Binomial = 3,
+    Uniform = 4,
+    // add other type of distribution
 } DistrType;
+
+typedef struct DtrParamStruct
+{
+    float mean_Normal;
+    float stdev_Normal;
+    float mean_Poisson;
+    float prob_Bernoulli;
+    int upperBound_Binomial;
+    float prob_Binomial;
+    float upperBound_Uniform;
+    float lowerBound_Uniform;
+    int dtrType;
+    bool flag;
+}DtrParam;
+
+const DtrParam defaultDetectThreshDtrParam = {defaultDetectThreshMean, defaultDetectThreshStdev, 0.5, 0.5, 10, 0.5, 0.0, 2.0, 0, 1}; 
+const DtrParam defaultForwardThresDtrParam = {defaultForwardThreshMean, defaultForwardThreshStdev, 0.5, 0.5, 10, 0.5, 0.0, 2.0, 0, 1};
+const DtrParam defaultLieFreqDtrParam = {defaultLieFreqMean, defaultLieFreqStdev, 0.5, 0.5, 10, 0.5, 0.0, 2.0, 0, 1};
+const DtrParam defaultLieThreshDtrParam = {defaultLieThreshMean, defaultLieThreshStdev, 0.5, 0.5, 10, 0.5, 0.0, 2.0, 0, 1};
+const DtrParam defaultTrustLowDtrParam = {defaultTrustLowMean, defaultTrustLowStdev, 0.5, 0.5, 10, 0.5, 0.0, 2.0, 0, 1};
+const DtrParam defaultTrustUpDtrParam = {defaultTrustUpMean, defaultTrustUpStdev, 0.5, 0.5, 10, 0.5, 0.0, 2.0, 0, 1};
+
+int factorial(int num);
+
+float pdfOfNormal(float x, float mean, float stdev);
+
+float pdfOfPoisson(float mean, int32_t i);
+
+float pdfOfBernoulli(float p, int b);
+
+float pdfOfBinomial(int t, float p, int i);
+
+float pdfOfUniform(float a, float b);
+
+float GenRand(DtrParam param);
 
 float GenRandNum_NormalDtr(float mean, float stdev);
 
-float GenRandNum_PossionDtr(float mean);
+float GenRandNum_PoissonDtr(float mean);
+
+float GenRandNum_BernoulliDtr(float prob);
+
+float GenRandNum_BinomialDtr(int upperBound, float prob);
+
+float GenRandNum_UniformDtr(float lowerBound, float upperBound); // (0, 1)
 
 float GenRandNum(float minNum, float maxNum);
 
@@ -192,17 +235,20 @@ std::string FloatToString(float num);
 
 float StringToFloat(std::string str);
 
-std::string GenDetectThresh(int type = 0, float mean = defaultDetectThreshMean, float stdev = defaultDetectThreshStdev);
+int StringToInt(std::string str);
 
-std::string GenForwardThresh(int type = 0, float mean = defaultForwardThreshMean, float stdev = defaultForwardThreshStdev);
-
-std::string GenLieThresh(int type = 0, float mean = defaultLieThreshMean, float stdev = defaultLieThreshStdev);
-
-std::string GenLieFreq(int type = 0, float mean = defaultLieFreqMean, float stdev = defaultLieFreqStdev);
-
-std::string GenTrustLowBound(int type = 0, float mean = defaultTrustLowMean, float stdev = defaultTrustLowStdev);
-
-std::string GenTrustUpBound(int type = 0, float mean = defaultTrustUpMean, float stdev = defaultTrustUpStdev);
+//std::string GenDetectThresh(int type = 0, float mean = defaultDetectThreshMean, float stdev = defaultDetectThreshStdev);
+std::string GenDetectThresh(int type = 0, DtrParam param = defaultDetectThreshDtrParam);
+//std::string GenForwardThresh(int type = 0, float mean = defaultForwardThreshMean, float stdev = defaultForwardThreshStdev);
+std::string GenForwardThresh(int type = 0, DtrParam param = defaultForwardThresDtrParam);
+//std::string GenLieThresh(int type = 0, float mean = defaultLieThreshMean, float stdev = defaultLieThreshStdev);
+std::string GenLieThresh(int type = 0, DtrParam param = defaultLieThreshDtrParam);
+//std::string GenLieFreq(int type = 0, float mean = defaultLieFreqMean, float stdev = defaultLieFreqStdev);
+std::string GenLieFreq(int type = 0, DtrParam param = defaultLieFreqDtrParam);
+//std::string GenTrustLowBound(int type = 0, float mean = defaultTrustLowMean, float stdev = defaultTrustLowStdev);
+std::string GenTrustLowBound(int type = 0, DtrParam param = defaultTrustLowDtrParam);
+//std::string GenTrustUpBound(int type = 0, float mean = defaultTrustUpMean, float stdev = defaultTrustUpStdev);
+std::string GenTrustUpBound(int type = 0, DtrParam param = defaultTrustUpDtrParam);
 
 std::string GenDetectRange();
 
@@ -240,8 +286,12 @@ std::string GenVisibility();
 
 bool GenSimFile(int AttackerNum, int AuthorityNum, int DefaultNum, int IncidentNum, int rsuNum);
 
+DtrParam ReadParam(XMLNode node, std::string type, std::map<std::string, int> mapTypeList);
+
 std::string ReadParamFromFile(std::string param, XMLNode node, std::string type, std::map<std::string, int> mapTypeList);
 
 bool GenSimFile(const char * filename);
+
+void SimFile(const char* filename);
 
 #endif //GENERATESIMFILE_H
